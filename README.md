@@ -31,3 +31,18 @@ python tests/trace_regression.py
 ```
 
 The regression script evaluates the 10 public traces from `D:\Download\GenAI_SampleConversations` when they are available.
+
+## Deploy on Render
+
+1. Push this repository to GitHub.
+2. In Render, choose **New +** -> **Blueprint**.
+3. Connect the GitHub repository.
+4. Render will use `render.yaml`.
+5. After deploy, test:
+
+```text
+https://YOUR-RENDER-SERVICE.onrender.com/health
+https://YOUR-RENDER-SERVICE.onrender.com/docs
+```
+
+Submit the deployed base URL, for example `https://YOUR-RENDER-SERVICE.onrender.com`.

@@ -24,6 +24,18 @@ python scripts/ingest_shl_catalog.py
 
 The ingestion script downloads the official assignment catalog JSON and normalizes it into `app/data/shl_catalog.json`. The app only recommends entries present in that normalized catalog.
 
+## Optional Semantic Retrieval
+
+The retriever supports sentence-transformer embeddings plus FAISS vector search. It is optional because the ML stack pulls PyTorch and can be heavy for free-tier hosting.
+
+```powershell
+pip install -r requirements-ml.txt
+$env:ENABLE_SEMANTIC_RETRIEVAL="1"
+uvicorn app.main:app --reload
+```
+
+Without that flag, the app uses the same RAG pipeline with deterministic lexical retrieval and business reranking, which keeps Render startup reliable.
+
 ## Run trace regression
 
 ```powershell
@@ -46,3 +58,12 @@ https://YOUR-RENDER-SERVICE.onrender.com/docs
 ```
 
 Submit the deployed base URL, for example `https://YOUR-RENDER-SERVICE.onrender.com`.
+
+## Groq Grounded Formatting
+
+The app has an optional Groq formatting layer for richer grounded explanations and comparisons. It never creates recommendations; it only summarizes already-retrieved catalog rows.
+
+```powershell
+$env:GROQ_API_KEY="your_key"
+$env:GROQ_MODEL="llama-3.1-8b-instant"
+```

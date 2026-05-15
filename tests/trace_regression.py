@@ -30,7 +30,8 @@ def extract_user_turns(text: str) -> list[str]:
 
 
 def extract_expected_names(text: str) -> list[str]:
-    names: list[str] = []
+    tables: list[list[str]] = []
+    current: list[str] = []
     for line in text.splitlines():
         match = re.match(r"\|\s*\d+\s*\|\s*(.*?)\s*\|", line)
         if match:
@@ -45,9 +46,14 @@ def extract_expected_names(text: str) -> list[str]:
                 )
                 .replace("Microsoft Excel 365 (New)", "Microsoft Excel 365 - Essentials (New)")
             )
-            if name not in names:
-                names.append(name)
-    return names
+            if name not in current:
+                current.append(name)
+        elif current:
+            tables.append(current)
+            current = []
+    if current:
+        tables.append(current)
+    return tables[-1] if tables else []
 
 
 def main() -> None:

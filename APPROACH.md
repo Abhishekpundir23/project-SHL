@@ -20,7 +20,17 @@ The runtime uses the JSON snapshot rather than live network access so `/chat` st
 
 ## Agent Design
 
-The agent is implemented in `app/agent.py` and remains stateless. It rebuilds context from the supplied `messages` array on every request.
+The agent is implemented as a small RAG pipeline and remains stateless. It rebuilds context from the supplied `messages` array on every request.
+
+The pipeline is:
+
+- scope and injection guard
+- intent detection
+- structured constraint extraction
+- hybrid retrieval
+- reranking and diversity enforcement
+- optional Groq grounded formatting
+- Pydantic schema validation
 
 The router is deterministic:
 
@@ -31,11 +41,11 @@ The router is deterministic:
 
 ## Retrieval
 
-Retrieval is lightweight lexical scoring over structured catalog fields. The scorer expands common role phrases with assessment-relevant terms, boosts explicitly requested SHL test-type families, and returns a diverse top 1 to 10 shortlist. This avoids URL hallucination because only catalog rows can become recommendations.
+Retrieval is hybrid. The production-safe default uses lexical retrieval plus structured business reranking. The code also supports `sentence-transformers` and FAISS when `ENABLE_SEMANTIC_RETRIEVAL=1` and `requirements-ml.txt` is installed. Catalog titles, descriptions, job levels, languages, duration, and metadata are embedded as retrieval documents. This avoids URL hallucination because only catalog rows can become recommendations.
 
 ## Prompting and LLM Use
 
-No external LLM is required at runtime. This choice improves repeatability for automated evaluation, removes API-key deployment friction, and guarantees schema compliance. The conversational behavior is encoded as transparent routing and retrieval rules rather than hidden model prompts.
+No external LLM is required for retrieval or schema production. If `GROQ_API_KEY` is set, the app uses Groq only as a grounded formatter for richer prose and comparisons. The prompt instructs the model to use only retrieved catalog context, and the structured recommendation array still comes from catalog rows rather than model output.
 
 ## Evaluation Strategy
 
@@ -46,6 +56,7 @@ Validation focuses on hard evals:
 - Shortlists contain only objects from the catalog snapshot.
 - The request model caps message count at 16 messages, representing up to 8 user/assistant exchange pairs.
 - Local probes cover vague clarification, recommendation, refinement, comparison, and off-topic refusal.
-- The public trace harness in `tests/trace_regression.py` reached mean Recall@10 of 0.99 across the 10 provided traces. The one apparent miss is REST in C9, which the user later explicitly removes, so the final-state battery remains aligned.
+- `tests/evaluate.py` reports mean Recall@10, hallucination rate, and guardrail pass rate.
+- The public trace harness in `tests/trace_regression.py` reached final-state mean Recall@10 of 1.00 across the 10 provided traces.
 
-The main remaining improvement path is holdout breadth: the public traces are now covered, but unseen personas may still benefit from more synonym expansion and ranking calibration.
+The main remaining improvement path is holdout breadth: the public traces are now covered, but unseen personas may still benefit from more synonym expansion, ranking calibration, and enabling the optional semantic index on a larger deployment target.
